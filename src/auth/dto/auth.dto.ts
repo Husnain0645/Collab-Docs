@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -7,6 +7,7 @@ export class LoginDto {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(6)
   password: string;
 }
 
@@ -33,4 +34,17 @@ export class JwtPayload {
   sub: string;
   email: string;
   role: string;
+}
+
+export class AuthResponseDto {
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  token: string;
 }

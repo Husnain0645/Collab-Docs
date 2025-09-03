@@ -1,16 +1,16 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, RegisterDto, JwtPayload } from './dto/auth.dto';
+import { LoginDto, RegisterDto, JwtPayload, AuthResponseDto } from './dto/auth.dto';
 import { User, UserRole } from './entities/user.entity';
 
 @Injectable()
 export class AuthService {
   private users: User[] = []; // In-memory storage for demo purposes
 
-  constructor(private jwtService: JwtService) {}
+  constructor(private readonly jwtService: JwtService) {}
 
-  async register(registerDto: RegisterDto): Promise<{ user: Omit<User, 'password'>; token: string }> {
+  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
     const existingUser = this.users.find(user => user.email === registerDto.email);
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
@@ -40,7 +40,7 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto): Promise<{ user: Omit<User, 'password'>; token: string }> {
+  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -74,10 +74,21 @@ export class AuthService {
   }
 
   async findUserById(id: string): Promise<User | null> {
+    if (!id) {
+      throw new BadRequestException('User ID is required');
+    }
     return this.users.find(user => user.id === id) || null;
   }
 
   async updateUserRole(userId: string, newRole: UserRole): Promise<User> {
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+    
+    if (!Object.values(UserRole).includes(newRole)) {
+      throw new BadRequestException('Invalid role specified');
+    }
+
     const userIndex = this.users.findIndex(user => user.id === userId);
     if (userIndex === -1) {
       throw new UnauthorizedException('User not found');
@@ -87,5 +98,9 @@ export class AuthService {
     this.users[userIndex].updatedAt = new Date();
 
     return this.users[userIndex];
+  }
+
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
+    return this.users.map(({ password, ...user }) => user);
   }
 }

@@ -1,6 +1,18 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { 
+  Controller, 
+  Post, 
+  Body, 
+  Get, 
+  UseGuards, 
+  Request, 
+  HttpCode, 
+  HttpStatus,
+  Param,
+  ParseEnumPipe,
+  ParseUUIDPipe
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, AuthResponseDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
@@ -12,18 +24,21 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
+  @HttpCode(HttpStatus.CREATED)
+  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
   }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
-  async getProfile(@CurrentUser() user: any) {
+  @HttpCode(HttpStatus.OK)
+  async getProfile(@CurrentUser() user: any): Promise<Omit<User, 'password'>> {
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
@@ -31,20 +46,20 @@ export class AuthController {
   @Get('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
-  async getAllUsers() {
-    // This would typically fetch from a database
-    // For demo purposes, returning a message
-    return { message: 'Access granted to view all users' };
+  @HttpCode(HttpStatus.OK)
+  async getAllUsers(): Promise<Omit<User, 'password'>[]> {
+    return this.authService.getAllUsers();
   }
 
   @Post('role/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
+  @HttpCode(HttpStatus.OK)
   async updateUserRole(
-    @Request() req: any,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body('role', new ParseEnumPipe(UserRole)) newRole: UserRole,
     @CurrentUser() currentUser: any,
-  ) {
-    // This endpoint would allow owners to change user roles
-    return { message: 'Role update endpoint - implement as needed' };
+  ): Promise<User> {
+    return this.authService.updateUserRole(userId, newRole);
   }
 }

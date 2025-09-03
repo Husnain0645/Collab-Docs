@@ -1,23 +1,31 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { UserRole } from '../entities/user.entity';
 
+interface AuthenticatedUser {
+  id: string;
+  email: string;
+  role: string;
+}
+
 @Controller('example')
 export class ExampleController {
   
   // Public endpoint - no authentication required
   @Get('public')
-  getPublicData() {
+  @HttpCode(HttpStatus.OK)
+  getPublicData(): { message: string } {
     return { message: 'This is public data' };
   }
 
   // Protected endpoint - requires valid JWT token
   @Get('protected')
   @UseGuards(JwtAuthGuard)
-  getProtectedData(@CurrentUser() user: any) {
+  @HttpCode(HttpStatus.OK)
+  getProtectedData(@CurrentUser() user: AuthenticatedUser): { message: string; user: AuthenticatedUser } {
     return { 
       message: 'This is protected data',
       user: {
@@ -32,7 +40,8 @@ export class ExampleController {
   @Get('admin-only')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
-  getAdminData(@CurrentUser() user: any) {
+  @HttpCode(HttpStatus.OK)
+  getAdminData(@CurrentUser() user: AuthenticatedUser): { message: string; user: AuthenticatedUser } {
     return { 
       message: 'This is admin-only data',
       user: {
@@ -47,7 +56,8 @@ export class ExampleController {
   @Get('collaborator-content')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.COLLABORATOR)
-  getCollaboratorContent(@CurrentUser() user: any) {
+  @HttpCode(HttpStatus.OK)
+  getCollaboratorContent(@CurrentUser() user: AuthenticatedUser): { message: string; user: AuthenticatedUser } {
     return { 
       message: 'This content is for owners and collaborators',
       user: {
