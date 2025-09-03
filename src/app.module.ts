@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -10,7 +11,8 @@ import { AuthModule } from './auth/auth.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    AuthModule,
+    DatabaseModule, // Database configuration
+    AuthModule,     // Auth module (depends on DatabaseModule)
   ],
   controllers: [AppController],
   providers: [AppService],

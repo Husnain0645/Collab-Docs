@@ -2,12 +2,15 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { ExampleController } from './examples/protected-route.example';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { User } from './entities/user.entity';
 
 @Module({
   imports: [
@@ -22,8 +25,9 @@ import { RolesGuard } from './guards/roles.guard';
       }),
       inject: [ConfigService],
     }),
+    TypeOrmModule.forFeature([User]), // Register User entity for this module
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, ExampleController],
   providers: [
     AuthService,
     JwtStrategy,
@@ -31,6 +35,6 @@ import { RolesGuard } from './guards/roles.guard';
     JwtAuthGuard,
     RolesGuard,
   ],
-  exports: [AuthService, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard, TypeOrmModule],
 })
 export class AuthModule {}
